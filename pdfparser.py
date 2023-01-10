@@ -25,7 +25,7 @@ class Parser:
     def __init__(self, path: str = None) -> None:
         self.header_is_find = False
         self.pdf: pdfplumber.pdf.PDF = None
-        self.pdf_num=0
+        self.pdf_num = 0
         self.all_page_words: List[List[Dict[str, str]]] = []
         self.all_page_tables: List[List[Table]] = []
         self.read_pdf(path=path)
@@ -52,7 +52,8 @@ class Parser:
                 if not pagination+1 < len(self.all_page_words):
                     break
                 now_page_words = self.all_page_words[pagination]  # 拿到当前页的所有字块
-                next_page_words = self.all_page_words[pagination+1]  # 拿到下一页的所有字块
+                # 拿到下一页的所有字块
+                next_page_words = self.all_page_words[pagination+1]
                 # 判断当前字块序号是否超出索引范围
                 if not word_num < len(now_page_words) or not word_num < len(next_page_words):
                     continue
@@ -70,6 +71,43 @@ class Parser:
             if word_num > HEADER_MAX_ROW:
                 return False
 
+    # own_header 表示该页是否有页眉
+    def consolidate_tables(self, pagination: int, table_num: int, own_header: bool):
+        # 此函数用来判断下一页的第一张表格是否与上一页最后一张表格是同一张表格
+        def table_is_consecutive(header_msg: list[Dict[str, str]], page_words: list[Dict[str, str]], table_top: str):
+            try:
+                for word_num, header_word in enumerate(page_words):
+                    if word_num < len(header_msg):
+                        if not header_msg[word_num]['text'] == header_word['text']:
+                            return False
+                    else:
+                        if table_top <= header_word['top']:
+                            return True
+                        else:
+                            return False
+
+            except Exception as e:
+                print(e)
+                return False
+        table_statue: Dict[str, list] = {
+            'pagination': [pagination],
+            'list': [table_num]
+        }
+        header_msg = self.get_header()
+        while True:
+            if not pagination+1 < self.pages_num:
+                break
+            page = self.pdf.pages[pagination+1]
+            tables = page.find_tables()
+            table_top = tables[0].bbox[1]
+            page_words = page.extract_words()
+            if table_is_consecutive(header_msg=header_msg, page_words=page_words, table_top=table_top):
+                table_statue['pagination'].append(pagination+1)
+                table_statue['list'].append(1)
+            if not len(tables) == 1:
+                break
+            pagination += 1
+        return table_statue
     # 整合表格
 
     def find_toc(self):
