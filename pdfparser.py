@@ -1,3 +1,4 @@
+import time
 import pdfplumber
 from pdfplumber.page import Page
 from pdfplumber.table import Table
@@ -25,14 +26,19 @@ class Parser:
     def __init__(self, path: str = None) -> None:
         self.header_is_find = False
         self.pdf: pdfplumber.pdf.PDF = None
+        self.pdf_file = None
         self.pdf_num = 0
         self.all_page_words: List[List[Dict[str, str]]] = []
         self.all_page_tables: List[List[Table]] = []
-        self.read_pdf(path=path)
+        self.open(path=path)
+        self.read_pdf()
         self.headers = Headers(pages_num=self.pages_num)
 
-    def read_pdf(self, path: str):
-        self.pdf = pdfplumber.open(path_or_fp=path)
+    def open(self, path):
+        self.pdf_file = open(path, 'rb')
+
+    def read_pdf(self):
+        self.pdf = pdfplumber.open(path_or_fp=self.pdf_file)
         self.pages_num = len(self.pdf.pages)
         for page in self.pdf.pages:
             self.all_page_words.append(page.extract_words())
@@ -51,7 +57,8 @@ class Parser:
             for pagination in range(len(self.all_page_words)):
                 if not pagination+1 < len(self.all_page_words):
                     break
-                now_page_words = self.all_page_words[pagination]  # 拿到当前页的所有字块
+                # 拿到当前页的所有字块
+                now_page_words = self.all_page_words[pagination]
                 # 拿到下一页的所有字块
                 next_page_words = self.all_page_words[pagination+1]
                 # 判断当前字块序号是否超出索引范围
@@ -72,7 +79,7 @@ class Parser:
                 return False
 
     # own_header 表示该页是否有页眉
-    def consolidate_tables(self, pagination: int, table_num: int, own_header: bool):
+    def consolidate_tables(self, pagination: int, table_num: int, own_header: bool) -> dict[str, list[int]]:
         # 此函数用来判断下一页的第一张表格是否与上一页最后一张表格是同一张表格
         def table_is_consecutive(header_msg: list[Dict[str, str]], page_words: list[Dict[str, str]], table_top: str):
             try:
@@ -108,12 +115,21 @@ class Parser:
                 break
             pagination += 1
         return table_statue
-    # 整合表格
+    
 
-    def find_toc(self):
+    def find_toc(self) -> List[int]:
+        page_numbers: List[int] = []
+        for page in self.pdf.pages:
+            if len(page.annots):
+                print(f'Msg from find_toc: 在第{page.page_number}页找到目录')
+                page_numbers.append(page.page_number)
+        return page_numbers
+
+    def get_toc(self):
         pass
 
     def close(self):
+        self.pdf_file.close()
         self.pdf.close()
 
     def __enter__(self):
@@ -122,6 +138,8 @@ class Parser:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
         return False
-# if __name__ == '__main__':
-#     with Parser('test.PDF') as parser:
-#         parser.get_header()
+
+
+if __name__ == '__main__':
+    with Parser('test.PDF') as parser:
+        pass
