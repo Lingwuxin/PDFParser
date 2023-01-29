@@ -17,7 +17,8 @@ class Headers:
         self.pages_num = pages_num
         self.header_words: Dict[str, HeaderMsg] = {}
         self.header_list: List[Dict[str, str]] = []
-        self.is_find=False
+        self.is_find = False
+        self.total_header = 0
 
     def append(self, word: Dict[str, str], pagination: int):
         word_text = word['text']
@@ -32,8 +33,8 @@ class Headers:
             self.header_words[word_text].pagination_list.append(pagination)
         if self.max < self.header_words[word_text].cout:
             self.max = self.header_words[word_text].cout
-        # word_num是字块的序号
 
+    # word_num是字块的序号
     def header_is_find(self, word_num: int, word_text: str):
         if word_num < 1:
             return False
@@ -46,8 +47,15 @@ class Headers:
         for header_word, header_msg in self.header_words.items():
             if header_msg.cout > self.pages_num/2:
                 self.header_list.append(header_msg.word_msg_dict)
-                self.is_find=True
+        self.is_find = True
+        self.total_header = len(self.header_list)
         return self.header_list
+
+    def get_header_text(self):
+        self.header_text_list: List[str] = []
+        for header_msg in self.get_header():
+            self.header_text_list.append(header_msg['text'])
+        return self.header_text_list
 
     def __str__(self) -> str:
         res = ''
