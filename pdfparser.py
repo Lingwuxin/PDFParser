@@ -36,8 +36,8 @@ class Parser:
         self.headers = Headers(pages_num=self.pages_num)
         self.find_header()
 
-        self.del_header_pages: List[Page] = []
-        self.del_header()
+        self.cropped_tables: List[Page] = []
+        self.crop_tables()
 
         self.possible_tocs: List[Dict[str, str]]=[]
         self.find_toc()
@@ -93,19 +93,22 @@ class Parser:
         else:
             print('Error from find_header: 无法确认页眉')
 
-    def del_header(self):
+    def crop_tables(self):
         header_num = self.headers.total_header
         header_text_list = self.headers.get_header_text()
         header_exist = True
         for page_index, page in enumerate(self.pdf.pages):
+            words=page.extract_words()
+            bottom:int=words[-3]['top']-1
             for i in range(header_num):
                 if self.all_page_words[page_index][i]['text'] != header_text_list[i]:
                     header_exist = False
                     break
             if header_exist:
-                bottom = self.all_page_words[page_index][header_num-1]['bottom']
-                self.del_header_pages.append(
-                    page.crop(bbox=[0, bottom, page.width, page.height]))
+                top:int = self.all_page_words[page_index][header_num-1]['bottom']
+                top += 10#冗余
+                self.cropped_tables.append(
+                    page.crop(bbox=[0, top, page.width, bottom]))
             header_exist = True
 
     # own_header 表示该页是否有页眉
