@@ -1,0 +1,11 @@
+{
+	"folders": [
+		{
+			"name": "PDFParser",
+			"path": "."
+		}
+	],
+	"settings": {
+		"python.analysis.typeCheckingMode": "off"
+	}
+}
