@@ -51,7 +51,7 @@ class Headers:
         self.total_header = len(self.header_list)
         return self.header_list
 
-    def get_header_text(self):
+    def get_header_text_list(self):
         self.header_text_list: List[str] = []
         for header_msg in self.get_header():
             self.header_text_list.append(header_msg['text'])
